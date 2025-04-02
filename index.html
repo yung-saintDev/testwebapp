@@ -1,14 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>puer'd up</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" />
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       padding: 0;
@@ -29,7 +27,7 @@
       margin-bottom: 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 16px;
     }
     .filter-group {
       display: flex;
@@ -37,11 +35,11 @@
       gap: 6px;
     }
     label {
-      font-size: 0.9rem;
+      font-size: 1rem;
       color: #cccccc;
     }
     select, input[type="text"], input[type="number"] {
-      padding: 8px;
+      padding: 12px;
       border-radius: 6px;
       border: none;
       background: #1a1a1a;
@@ -51,11 +49,6 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-    }
-    .range-value {
-      font-size: 0.85rem;
-      color: #aaa;
-      text-align: right;
     }
     input[type="range"] {
       -webkit-appearance: none;
@@ -73,7 +66,7 @@
       border-radius: 50%;
       background: #0088ff;
       cursor: pointer;
-      box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 0 2px rgba(0,0,0,0.2);
     }
     .catalog {
       display: flex;
@@ -181,72 +174,50 @@
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-
+  
     const user = tg.initDataUnsafe?.user;
     const isAdmin = user && user.id === 1047807309;
-
+  
     if (isAdmin) {
       document.querySelector('.admin-panel').style.display = 'block';
     }
-
-    const catalog = [
-      { name: "Шу Пуэр 2017", desc: "Мягкий, выдержанный, вкус дерева и времени.", type: "shu", price: 45 },
-      { name: "Шэн Пуэр 2021", desc: "Зелёный, свежий, немного дерзкий.", type: "sheng", price: 38 },
-      { name: "Те Гуань Инь", desc: "Флористический улун. Яркий, звонкий.", type: "oolong", price: 52 },
-      { name: "Белый чай Бай Му Дань", desc: "Тонкий, чуть сладкий, мягкий.", type: "white", price: 33 }
-    ];
-
+  
     const catalogEl = document.getElementById('catalog');
     const typeFilter = document.getElementById('type');
     const maxPriceSlider = document.getElementById('maxPrice');
     const maxValue = document.getElementById('maxValue');
-
+  
     const adminForm = document.getElementById('adminForm');
     const nameInput = document.getElementById('adminName');
     const descInput = document.getElementById('adminDesc');
     const typeInput = document.getElementById('adminType');
     const priceInput = document.getElementById('adminPrice');
-
-    let editIndex = null;
-
-    function updateCatalog() {
-      catalogEl.innerHTML = '';
-      const selectedType = typeFilter.value;
-      const max = parseInt(maxPriceSlider.value);
-      maxValue.textContent = `${max} ₽`;
-
-      const filtered = catalog.filter(item => {
-        return (selectedType === 'all' || item.type === selectedType) && item.price <= max;
-      });
-
-      filtered.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-          <h2>${item.name}</h2>
-          <p>${item.desc}</p>
-          <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
-          ${isAdmin ? `<button class="edit" onclick="editTea(${index})">Изменить</button><button onclick="deleteTea(${index})">Удалить</button>` : ''}
-        `;
-        catalogEl.appendChild(div);
-      });
-    }
-
-    function deleteTea(index) {
-      catalog.splice(index, 1);
+  
+    let editId = null;
+  
+    async function loadCatalog() {
+      const res = await fetch('http://localhost:8080/api/teas');
+      const data = await res.json();
+      window.catalog = data;
       updateCatalog();
     }
-
-    function editTea(index) {
-      const item = catalog[index];
+  
+    async function deleteTea(id) {
+      await fetch(`http://localhost:8080/api/teas/${id}`, { method: 'DELETE' });
+      loadCatalog();
+    }
+  
+    function editTea(id) {
+      const item = window.catalog.find(t => t.id === id);
+      if (!item) return;
       nameInput.value = item.name;
       descInput.value = item.desc;
       typeInput.value = item.type;
       priceInput.value = item.price;
-      editIndex = index;
+      editId = item.id;
     }
-
-    adminForm.addEventListener('submit', function (e) {
+  
+    adminForm.addEventListener('submit', async function (e) {
       e.preventDefault();
       const newTea = {
         name: nameInput.value,
@@ -254,22 +225,52 @@
         type: typeInput.value,
         price: parseInt(priceInput.value)
       };
-
-      if (editIndex !== null) {
-        catalog[editIndex] = newTea;
-        editIndex = null;
+      if (editId) {
+        await fetch(`http://localhost:8080/api/teas/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTea)
+        });
       } else {
-        catalog.push(newTea);
+        await fetch('http://localhost:8080/api/teas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTea)
+        });
       }
-
+      editId = null;
       adminForm.reset();
-      updateCatalog();
+      loadCatalog();
     });
-
+  
+    function updateCatalog() {
+      catalogEl.innerHTML = '';
+      const selectedType = typeFilter.value;
+      const max = parseInt(maxPriceSlider.value);
+      maxValue.textContent = `${max} ₽`;
+  
+      const filtered = window.catalog.filter(item =>
+        (selectedType === 'all' || item.type === selectedType) && item.price <= max
+      );
+  
+      filtered.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <h2>${item.name}</h2>
+          <p>${item.desc}</p>
+          <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
+          ${isAdmin ? `<button class="edit" onclick="editTea(${item.id})">Изменить</button><button onclick="deleteTea(${item.id})">Удалить</button>` : ''}
+        `;
+        catalogEl.appendChild(div);
+      });
+    }
+  
     maxPriceSlider.addEventListener('input', updateCatalog);
     typeFilter.addEventListener('change', updateCatalog);
-
-    updateCatalog();
+  
+    loadCatalog();
   </script>
+  
 </body>
 </html>
