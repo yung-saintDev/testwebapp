@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>puer'd up</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f9f9f9;
+      color: #222;
+    }
+    #app {
+      padding: 16px;
+      max-width: 100%;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 16px;
+    }
+    .catalog {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .item {
+      padding: 12px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      transition: transform 0.1s ease;
+    }
+    .item:hover {
+      transform: scale(1.01);
+    }
+    .item h2 {
+      font-size: 1.1rem;
+      margin: 0 0 4px;
+    }
+    .item p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <h1>🍵 puer'd up</h1>
+    <div class="catalog" id="catalog"></div>
+  </div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    const catalog = [
+      {
+        name: "Шу Пуэр 2017",
+        desc: "Мягкий, выдержанный, вкус дерева и времени."
+      },
+      {
+        name: "Шэн Пуэр 2021",
+        desc: "Зелёный, свежий, немного дерзкий."
+      },
+      {
+        name: "Те Гуань Инь",
+        desc: "Флористический улун. Яркий, звонкий."
+      },
+      {
+        name: "Белый чай Бай Му Дань",
+        desc: "Тонкий, чуть сладкий, мягкий."
+      }
+    ];
+
+    const catalogEl = document.getElementById('catalog');
+    catalog.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `<h2>${item.name}</h2><p>${item.desc}</p>`;
+      catalogEl.appendChild(div);
+    });
+  </script>
+</body>
+</html>
