@@ -13,47 +13,168 @@
       margin: 0;
       padding: 0;
       font-family: 'Inter', sans-serif;
-      background: #f9f9f9;
-      color: #222;
+      background: #0e0e0e;
+      color: #eaeaea;
     }
     #app {
-      padding: 16px;
+      padding: 20px;
       max-width: 100%;
     }
     h1 {
-      font-size: 1.4rem;
-      margin-bottom: 16px;
+      font-size: 1.6rem;
+      margin-bottom: 20px;
+      color: #ffffff;
     }
-    .catalog {
+    .filters {
+      margin-bottom: 20px;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 0.9rem;
+      color: #cccccc;
+    }
+    select, input[type="text"], input[type="number"] {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      background: #1a1a1a;
+      color: #eaeaea;
+    }
+    .price-range {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .range-value {
+      font-size: 0.85rem;
+      color: #aaa;
+      text-align: right;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #444;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #0088ff;
+      cursor: pointer;
+      box-shadow: 0 0 2px rgba(0, 0, 0, 0.2);
+    }
+    .catalog {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
     .item {
-      padding: 12px;
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      transition: transform 0.1s ease;
+      padding: 16px;
+      background: #1a1a1a;
+      border: 1px solid #2c2c2c;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .item:hover {
-      transform: scale(1.01);
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
     }
     .item h2 {
-      font-size: 1.1rem;
-      margin: 0 0 4px;
+      font-size: 1.2rem;
+      margin: 0 0 6px;
+      color: #ffffff;
     }
     .item p {
       margin: 0;
-      font-size: 0.9rem;
-      color: #555;
+      font-size: 0.95rem;
+      color: #cfcfcf;
+    }
+    .item button {
+      margin-top: 8px;
+      padding: 6px 10px;
+      background: #ff4444;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+    }
+    .item button.edit {
+      background: #ffaa00;
+      margin-right: 8px;
+    }
+    .admin-panel {
+      margin-top: 30px;
+      padding: 16px;
+      background: #1a1a1a;
+      border-radius: 10px;
+    }
+    .admin-panel h3 {
+      margin-top: 0;
+    }
+    .admin-panel form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .admin-panel button {
+      padding: 10px;
+      background: #0088ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .admin-panel button:hover {
+      background: #0077dd;
     }
   </style>
 </head>
 <body>
   <div id="app">
     <h1>🍵 puer'd up</h1>
+
+    <div class="filters">
+      <div class="filter-group">
+        <label for="type">Тип чая:</label>
+        <select id="type">
+          <option value="all">Все</option>
+          <option value="shu">Шу Пуэр</option>
+          <option value="sheng">Шэн Пуэр</option>
+          <option value="oolong">Улун</option>
+          <option value="white">Белый</option>
+        </select>
+      </div>
+      <div class="filter-group price-range">
+        <label for="maxPrice">Максимальная цена: <span id="maxValue">100 ₽</span></label>
+        <input type="range" id="maxPrice" min="0" max="100" value="100">
+      </div>
+    </div>
+
     <div class="catalog" id="catalog"></div>
+
+    <div class="admin-panel" style="display: none;">
+      <h3>Админ-панель</h3>
+      <form id="adminForm">
+        <input type="text" id="adminName" placeholder="Название чая" required>
+        <input type="text" id="adminDesc" placeholder="Описание" required>
+        <input type="text" id="adminType" placeholder="Тип (shu/sheng/oolong/white)" required>
+        <input type="number" id="adminPrice" placeholder="Цена ₽/г" required>
+        <button type="submit">Добавить / Обновить чай</button>
+      </form>
+    </div>
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -61,32 +182,94 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
+    const user = tg.initDataUnsafe?.user;
+    const isAdmin = user && user.id === 1047807309;
+
+    if (isAdmin) {
+      document.querySelector('.admin-panel').style.display = 'block';
+    }
+
     const catalog = [
-      {
-        name: "Шу Пуэр 2017",
-        desc: "Мягкий, выдержанный, вкус дерева и времени."
-      },
-      {
-        name: "Шэн Пуэр 2021",
-        desc: "Зелёный, свежий, немного дерзкий."
-      },
-      {
-        name: "Те Гуань Инь",
-        desc: "Флористический улун. Яркий, звонкий."
-      },
-      {
-        name: "Белый чай Бай Му Дань",
-        desc: "Тонкий, чуть сладкий, мягкий."
-      }
+      { name: "Шу Пуэр 2017", desc: "Мягкий, выдержанный, вкус дерева и времени.", type: "shu", price: 45 },
+      { name: "Шэн Пуэр 2021", desc: "Зелёный, свежий, немного дерзкий.", type: "sheng", price: 38 },
+      { name: "Те Гуань Инь", desc: "Флористический улун. Яркий, звонкий.", type: "oolong", price: 52 },
+      { name: "Белый чай Бай Му Дань", desc: "Тонкий, чуть сладкий, мягкий.", type: "white", price: 33 }
     ];
 
     const catalogEl = document.getElementById('catalog');
-    catalog.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'item';
-      div.innerHTML = `<h2>${item.name}</h2><p>${item.desc}</p>`;
-      catalogEl.appendChild(div);
+    const typeFilter = document.getElementById('type');
+    const maxPriceSlider = document.getElementById('maxPrice');
+    const maxValue = document.getElementById('maxValue');
+
+    const adminForm = document.getElementById('adminForm');
+    const nameInput = document.getElementById('adminName');
+    const descInput = document.getElementById('adminDesc');
+    const typeInput = document.getElementById('adminType');
+    const priceInput = document.getElementById('adminPrice');
+
+    let editIndex = null;
+
+    function updateCatalog() {
+      catalogEl.innerHTML = '';
+      const selectedType = typeFilter.value;
+      const max = parseInt(maxPriceSlider.value);
+      maxValue.textContent = `${max} ₽`;
+
+      const filtered = catalog.filter(item => {
+        return (selectedType === 'all' || item.type === selectedType) && item.price <= max;
+      });
+
+      filtered.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <h2>${item.name}</h2>
+          <p>${item.desc}</p>
+          <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
+          ${isAdmin ? `<button class="edit" onclick="editTea(${index})">Изменить</button><button onclick="deleteTea(${index})">Удалить</button>` : ''}
+        `;
+        catalogEl.appendChild(div);
+      });
+    }
+
+    function deleteTea(index) {
+      catalog.splice(index, 1);
+      updateCatalog();
+    }
+
+    function editTea(index) {
+      const item = catalog[index];
+      nameInput.value = item.name;
+      descInput.value = item.desc;
+      typeInput.value = item.type;
+      priceInput.value = item.price;
+      editIndex = index;
+    }
+
+    adminForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const newTea = {
+        name: nameInput.value,
+        desc: descInput.value,
+        type: typeInput.value,
+        price: parseInt(priceInput.value)
+      };
+
+      if (editIndex !== null) {
+        catalog[editIndex] = newTea;
+        editIndex = null;
+      } else {
+        catalog.push(newTea);
+      }
+
+      adminForm.reset();
+      updateCatalog();
     });
+
+    maxPriceSlider.addEventListener('input', updateCatalog);
+    typeFilter.addEventListener('change', updateCatalog);
+
+    updateCatalog();
   </script>
 </body>
 </html>
