@@ -174,50 +174,72 @@
   <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-  
+
     const user = tg.initDataUnsafe?.user;
     const isAdmin = user && user.id === 1047807309;
-  
+
     if (isAdmin) {
       document.querySelector('.admin-panel').style.display = 'block';
     }
-  
+
+    const catalog = [
+      { name: "Шу Пуэр 2017", desc: "Мягкий, выдержанный, вкус дерева и времени.", type: "shu", price: 45 },
+      { name: "Шэн Пуэр 2021", desc: "Зелёный, свежий, немного дерзкий.", type: "sheng", price: 38 },
+      { name: "Те Гуань Инь", desc: "Флористический улун. Яркий, звонкий.", type: "oolong", price: 52 },
+      { name: "Белый чай Бай Му Дань", desc: "Тонкий, чуть сладкий, мягкий.", type: "white", price: 33 }
+    ];
+
     const catalogEl = document.getElementById('catalog');
     const typeFilter = document.getElementById('type');
     const maxPriceSlider = document.getElementById('maxPrice');
     const maxValue = document.getElementById('maxValue');
-  
+
     const adminForm = document.getElementById('adminForm');
     const nameInput = document.getElementById('adminName');
     const descInput = document.getElementById('adminDesc');
     const typeInput = document.getElementById('adminType');
     const priceInput = document.getElementById('adminPrice');
-  
-    let editId = null;
-  
-    async function loadCatalog() {
-      const res = await fetch('http://localhost:8080/api/teas');
-      const data = await res.json();
-      window.catalog = data;
+
+    let editIndex = null;
+
+    function updateCatalog() {
+      catalogEl.innerHTML = '';
+      const selectedType = typeFilter.value;
+      const max = parseInt(maxPriceSlider.value);
+      maxValue.textContent = `${max} ₽`;
+
+      const filtered = catalog.filter(item =>
+        (selectedType === 'all' || item.type === selectedType) && item.price <= max
+      );
+
+      filtered.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `
+          <h2>${item.name}</h2>
+          <p>${item.desc}</p>
+          <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
+          ${isAdmin ? `<button class="edit" onclick="editTea(${index})">Изменить</button><button onclick="deleteTea(${index})">Удалить</button>` : ''}
+        `;
+        catalogEl.appendChild(div);
+      });
+    }
+
+    function deleteTea(index) {
+      catalog.splice(index, 1);
       updateCatalog();
     }
-  
-    async function deleteTea(id) {
-      await fetch(`http://localhost:8080/api/teas/${id}`, { method: 'DELETE' });
-      loadCatalog();
-    }
-  
-    function editTea(id) {
-      const item = window.catalog.find(t => t.id === id);
-      if (!item) return;
+
+    function editTea(index) {
+      const item = catalog[index];
       nameInput.value = item.name;
       descInput.value = item.desc;
       typeInput.value = item.type;
       priceInput.value = item.price;
-      editId = item.id;
+      editIndex = index;
     }
-  
-    adminForm.addEventListener('submit', async function (e) {
+
+    adminForm.addEventListener('submit', function (e) {
       e.preventDefault();
       const newTea = {
         name: nameInput.value,
@@ -225,52 +247,20 @@
         type: typeInput.value,
         price: parseInt(priceInput.value)
       };
-      if (editId) {
-        await fetch(`http://localhost:8080/api/teas/${editId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newTea)
-        });
+      if (editIndex !== null) {
+        catalog[editIndex] = newTea;
+        editIndex = null;
       } else {
-        await fetch('http://localhost:8080/api/teas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newTea)
-        });
+        catalog.push(newTea);
       }
-      editId = null;
       adminForm.reset();
-      loadCatalog();
+      updateCatalog();
     });
-  
-    function updateCatalog() {
-      catalogEl.innerHTML = '';
-      const selectedType = typeFilter.value;
-      const max = parseInt(maxPriceSlider.value);
-      maxValue.textContent = `${max} ₽`;
-  
-      const filtered = window.catalog.filter(item =>
-        (selectedType === 'all' || item.type === selectedType) && item.price <= max
-      );
-  
-      filtered.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-          <h2>${item.name}</h2>
-          <p>${item.desc}</p>
-          <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
-          ${isAdmin ? `<button class="edit" onclick="editTea(${item.id})">Изменить</button><button onclick="deleteTea(${item.id})">Удалить</button>` : ''}
-        `;
-        catalogEl.appendChild(div);
-      });
-    }
-  
+
     maxPriceSlider.addEventListener('input', updateCatalog);
     typeFilter.addEventListener('change', updateCatalog);
-  
-    loadCatalog();
+
+    updateCatalog();
   </script>
-  
 </body>
 </html>
