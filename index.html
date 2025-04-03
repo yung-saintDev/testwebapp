@@ -187,140 +187,144 @@
   </div>
 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script>
-    const tg = window.Telegram.WebApp;
-    tg.expand();
+  <!-- Только JS-часть (вставь в <script> после updateCatalog();) -->
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.expand();
 
-    const user = tg.initDataUnsafe?.user;
-    const isAdmin = user && user.id === 1047807309;
+  const user = tg.initDataUnsafe?.user;
+  const isAdmin = user && user.id === 1047807309;
 
-    if (isAdmin) {
-      document.querySelector('.admin-panel').style.display = 'block';
+  if (isAdmin) {
+    document.querySelector('.admin-panel').style.display = 'block';
+  }
+
+  const catalog = [
+    { name: "Шу Пуэр 2017", desc: "Мягкий, выдержанный, вкус дерева и времени.", type: "shu", price: 45 },
+    { name: "Шэн Пуэр 2021", desc: "Зелёный, свежий, немного дерзкий.", type: "sheng", price: 38 },
+    { name: "Те Гуань Инь", desc: "Флористический улун. Яркий, звонкий.", type: "oolong", price: 52 },
+    { name: "Белый чай Бай Му Дань", desc: "Тонкий, чуть сладкий, мягкий.", type: "white", price: 33 }
+  ];
+
+  const catalogEl = document.getElementById('catalog');
+  const typeFilter = document.getElementById('type');
+  const maxPriceSlider = document.getElementById('maxPrice');
+  const maxValue = document.getElementById('maxValue');
+
+  const adminForm = document.getElementById('adminForm');
+  const nameInput = document.getElementById('adminName');
+  const descInput = document.getElementById('adminDesc');
+  const typeInput = document.getElementById('adminType');
+  const priceInput = document.getElementById('adminPrice');
+
+  let editIndex = null;
+
+  let cart = {};
+  let shownAddMessage = false;
+
+  function addToCart(item) {
+    if (!cart[item.name]) {
+      cart[item.name] = { item, grams: 0 };
+    }
+    cart[item.name].grams += 10;
+    updateCartButton();
+
+    if (!shownAddMessage) {
+      tg.showPopup({ message: "✅ Товар добавлен в корзину.\nМожете посмотреть её в боте." });
+      shownAddMessage = true;
+    }
+  }
+
+  function updateCartButton() {
+    const totalItems = Object.values(cart).length;
+    if (totalItems === 0) {
+      tg.MainButton.hide();
+      return;
     }
 
-    const catalog = [
-      { name: "Шу Пуэр 2017", desc: "Мягкий, выдержанный, вкус дерева и времени.", type: "shu", price: 45 },
-      { name: "Шэн Пуэр 2021", desc: "Зелёный, свежий, немного дерзкий.", type: "sheng", price: 38 },
-      { name: "Те Гуань Инь", desc: "Флористический улун. Яркий, звонкий.", type: "oolong", price: 52 },
-      { name: "Белый чай Бай Му Дань", desc: "Тонкий, чуть сладкий, мягкий.", type: "white", price: 33 }
-    ];
+    let totalWeight = 0;
+    Object.values(cart).forEach(c => totalWeight += c.grams);
 
-    const catalogEl = document.getElementById('catalog');
-    const typeFilter = document.getElementById('type');
-    const maxPriceSlider = document.getElementById('maxPrice');
-    const maxValue = document.getElementById('maxValue');
+    tg.MainButton.setText(`🛒 В корзине ${totalWeight} г`);
+    tg.MainButton.show();
+  }
 
-    const adminForm = document.getElementById('adminForm');
-    const nameInput = document.getElementById('adminName');
-    const descInput = document.getElementById('adminDesc');
-    const typeInput = document.getElementById('adminType');
-    const priceInput = document.getElementById('adminPrice');
-
-    let editIndex = null;
-
-    let cart = {};
-    let shownAddMessage = false;
-
-    function addToCart(item) {
-      if (!cart[item.name]) {
-        cart[item.name] = { item, grams: 0 };
-      }
-      cart[item.name].grams += 10;
-      updateCartButton();
-
-      if (!shownAddMessage) {
-        tg.showPopup({ message: "✅ Товар добавлен в корзину.\nМожете посмотреть её в боте." });
-        shownAddMessage = true;
-      }
+  tg.MainButton.onClick(() => {
+    let text = '🛍️ Ваша корзина:\n\n';
+    for (const name in cart) {
+      const { grams, item } = cart[name];
+      text += `• ${name} — ${grams} г × ${item.price} ₽/г = ${grams * item.price} ₽\n`;
     }
+    tg.showPopup({ message: text });
+  });
 
-    function updateCartButton() {
-      const totalItems = Object.values(cart).length;
-      if (totalItems === 0) {
-        tg.MainButton.hide();
-        return;
+  function updateCatalog() {
+    catalogEl.innerHTML = '';
+    const selectedType = typeFilter.value;
+    const max = parseInt(maxPriceSlider.value);
+    maxValue.textContent = `${max} ₽`;
+
+    const filtered = catalog.filter(item =>
+      (selectedType === 'all' || item.type === selectedType) && item.price <= max
+    );
+
+    filtered.forEach((item, index) => {
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.innerHTML = `
+        <h2>${item.name}</h2>
+        <p>${item.desc}</p>
+        <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
+        ${isAdmin ? `<button class="edit" onclick="editTea(${index})">Изменить</button><button onclick="deleteTea(${index})">Удалить</button>` : ''}
+      `;
+
+      if (!isAdmin) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Добавить в корзину';
+        btn.onclick = () => addToCart(item);
+        div.appendChild(btn);
       }
 
-      let totalWeight = 0;
-      Object.values(cart).forEach(c => totalWeight += c.grams);
-
-      tg.MainButton.setText(`🛒 В корзине ${totalWeight} г`);
-      tg.MainButton.show();
-    }
-
-    // When the main button is clicked, send the cart data to the bot
-    tg.MainButton.onClick(() => {
-      const cartData = JSON.stringify(cart);
-      tg.sendData(cartData);
+      catalogEl.appendChild(div);
     });
+  }
 
-    function updateCatalog() {
-      catalogEl.innerHTML = '';
-      const selectedType = typeFilter.value;
-      const max = parseInt(maxPriceSlider.value);
-      maxValue.textContent = `${max} ₽`;
-
-      const filtered = catalog.filter(item =>
-        (selectedType === 'all' || item.type === selectedType) && item.price <= max
-      );
-
-      filtered.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-          <h2>${item.name}</h2>
-          <p>${item.desc}</p>
-          <p style="margin-top:6px; color: #999;">${item.price} ₽/г</p>
-          ${isAdmin ? `<button class="edit" onclick="editTea(${index})">Изменить</button><button onclick="deleteTea(${index})">Удалить</button>` : ''}
-        `;
-
-        if (!isAdmin) {
-          const btn = document.createElement('button');
-          btn.textContent = 'Добавить в корзину';
-          btn.onclick = () => addToCart(item);
-          div.appendChild(btn);
-        }
-
-        catalogEl.appendChild(div);
-      });
-    }
-
-    function deleteTea(index) {
-      catalog.splice(index, 1);
-      updateCatalog();
-    }
-
-    function editTea(index) {
-      const item = catalog[index];
-      nameInput.value = item.name;
-      descInput.value = item.desc;
-      typeInput.value = item.type;
-      priceInput.value = item.price;
-      editIndex = index;
-    }
-
-    adminForm.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const newTea = {
-        name: nameInput.value,
-        desc: descInput.value,
-        type: typeInput.value,
-        price: parseInt(priceInput.value)
-      };
-      if (editIndex !== null) {
-        catalog[editIndex] = newTea;
-        editIndex = null;
-      } else {
-        catalog.push(newTea);
-      }
-      adminForm.reset();
-      updateCatalog();
-    });
-
-    maxPriceSlider.addEventListener('input', updateCatalog);
-    typeFilter.addEventListener('change', updateCatalog);
-
+  function deleteTea(index) {
+    catalog.splice(index, 1);
     updateCatalog();
-  </script>
+  }
+
+  function editTea(index) {
+    const item = catalog[index];
+    nameInput.value = item.name;
+    descInput.value = item.desc;
+    typeInput.value = item.type;
+    priceInput.value = item.price;
+    editIndex = index;
+  }
+
+  adminForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    const newTea = {
+      name: nameInput.value,
+      desc: descInput.value,
+      type: typeInput.value,
+      price: parseInt(priceInput.value)
+    };
+    if (editIndex !== null) {
+      catalog[editIndex] = newTea;
+      editIndex = null;
+    } else {
+      catalog.push(newTea);
+    }
+    adminForm.reset();
+    updateCatalog();
+  });
+
+  maxPriceSlider.addEventListener('input', updateCatalog);
+  typeFilter.addEventListener('change', updateCatalog);
+
+  updateCatalog();
+</script>
 </body>
 </html>
