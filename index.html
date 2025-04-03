@@ -13,11 +13,17 @@
       font-family: 'Inter', sans-serif;
       background: #0e0e0e;
       color: #eaeaea;
-      padding-bottom: 50px; /* Adds padding to prevent keyboard from overlapping input fields */
+      overflow-x: hidden;
+      position: relative;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
     #app {
       padding: 20px;
       max-width: 100%;
+      flex-grow: 1;
+      overflow-y: auto;
     }
     h1 {
       font-size: 1.6rem;
@@ -45,6 +51,7 @@
       border: none;
       background: #1a1a1a;
       color: #eaeaea;
+      margin-bottom: 10px;
     }
     .price-range {
       display: flex;
@@ -65,7 +72,7 @@
       height: 16px;
       width: 16px;
       border-radius: 50%;
-      background: #ffffff;
+      background: #0088ff;
       cursor: pointer;
       box-shadow: 0 0 2px rgba(0,0,0,0.2);
     }
@@ -133,6 +140,14 @@
     }
     .admin-panel button:hover {
       background: #0077dd;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border: 2px solid #0088ff;
+    }
+    /* Prevent zooming on iOS and mobile browsers */
+    input, textarea, select {
+      font-size: 16px;
     }
   </style>
 </head>
